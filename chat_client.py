@@ -16,38 +16,41 @@ def receive_from_server():
         # Welcome message
         welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window_frame.push_message(welcome_msg)
-        received_message = client_socket.recv(BUFFER_SIZE).decode("utf8")
-        # Split the message because two messages are sent
-        splitted_message = received_message.split('\r\n\r\n')
-        role_msg = splitted_message[0]
+        received_message = read_message()
+        role_msg = received_message[0]
         window_frame.set_role_label(json.loads(role_msg)["role"])
-        window_frame.push_message(splitted_message[1])
+        window_frame.push_message(received_message[1])
     except OSError:
         print("Closed the connection")
         return
 
-    with lock_obj:
+    with selection_cond_variable:
         game_loop = True
+
     # Game loop
     while True:
         try:
             # Retrieve the questions
-            questions = json.loads(read_message()[0])
+            if len(received_message) == 3:
+                questions = json.loads(received_message[2])
+            else:
+                questions = json.loads(read_message()[0])
             # Show the questions
             show_alternatives(questions)
             # Retrieve the selected question from the combo box
-            with lock_obj:
+            with selection_cond_variable:
                 selection_cond_variable.wait()
             selected_question = window_frame.peek_message()
             window_frame.reset_message()
             # Send the selected question to the server
-            client_socket.send(bytes(selected_question, "utf8"))
+            client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
             response = read_message()
             question_response = json.loads(response[0])
             # A trick question has been selected
             if question_response["status"] == "LOST":
+                print("You lost")
                 # Push the broadcast message
-                window_frame.push_message(response[1])
+                window_frame.push_message(read_message()[0])
                 # Close the window
                 window_frame.close_window()
                 return
@@ -57,18 +60,18 @@ def receive_from_server():
             # Show the choices
             show_alternatives(choices)
             # Make the user type the selected choice
-            with lock_obj:
+            with selection_cond_variable:
                 selection_cond_variable.wait()
             # Retrieve the selected choice
             selected_choice = window_frame.peek_message()
             window_frame.reset_message()
             # Send the selected choice to the server
-            client_socket.send(bytes(selected_choice, "utf8"))
+            client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
             response = read_message()
             # Read the broadcast message with the new score
             window_frame.push_message(response[0])
             # Write the new score
-            window_frame.push_message("Current score:" + json.loads(response[1])["score"])
+            window_frame.push_message(f"Current score: {json.loads(read_message()[0])['score']}")
         except OSError:
             print("Closed the connection")
             break
@@ -76,14 +79,11 @@ def receive_from_server():
 
 def show_alternatives(elems):
     for i in range(len(elems)):
-        window_frame.push_message(f"{i}. {elems[i]}")
-
-
-def text_selecting():
-    selection_cond_variable.notify()
+        window_frame.push_message(f"{i + 1}. {elems[i]}")
 
 
 def send_to_server(event=None):
+    global game_loop
     """Function for sending messages to the server"""
     msg = window_frame.peek_message()
     if msg == "{quit}":
@@ -92,15 +92,18 @@ def send_to_server(event=None):
         window_frame.close_window()
         return
 
-    with lock_obj:
+    with selection_cond_variable:
         if game_loop:
-            text_selecting()
+            selection_cond_variable.notify(1)
+        else:
+            client_socket.send(bytes(msg, "utf8"))
+            window_frame.reset_message()
 
 
 def read_message():
     """Read a message from the server, then return a list of messages sent by the server"""
     message = client_socket.recv(BUFFER_SIZE).decode("utf8")
-    return message.split('\r\n\r\n')
+    return list(filter(None, message.split('\r\n\r\n')))
 
 
 class TkinterFrame:
@@ -180,7 +183,6 @@ if not HOST:
 
 # Sync objects
 selection_cond_variable = Condition()
-lock_obj = Lock()
 
 game_loop = False
 
