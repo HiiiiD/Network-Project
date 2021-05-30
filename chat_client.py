@@ -84,10 +84,8 @@ def receive_from_server():
             # Send the selected choice to the server
             client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
             response = read_message()
-            # Read the broadcast message with the new score
-            window_frame.push_message(response[0])
             # Write the new score
-            window_frame.push_message(f"Current score: {json.loads(read_message()[0])['score']}")
+            window_frame.push_message(f"Current score: {json.loads(response[0])['score']}")
         except OSError:
             print("Closed the connection")
             break
@@ -158,6 +156,10 @@ class TkinterFrame:
         self.broadcast_pane = tkt.Frame(self.window)
         self.broadcast_list = build_scrollable_listbox(self.broadcast_pane)
         self.broadcast_pane.grid(column=1, row=1, sticky="nsew")
+        # Leaderboard list
+        self.leaderboard_pane = tkt.Frame(self.window)
+        self.leaderboard_list = build_scrollable_listbox(self.leaderboard_pane)
+        self.leaderboard_pane.grid(column=1, row=2, sticky="nsew", rowspan=2)
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
 
     def __on_closing(self):
@@ -228,9 +230,11 @@ broadcast_socket = socket(AF_INET, SOCK_STREAM)
 broadcast_socket.connect(ADDRESS)
 
 receive_thread = Thread(target=receive_from_server)
+receive_thread.setDaemon(True)
 receive_thread.start()
 
 broadcast_thread = Thread(target=broadcast_receive)
+broadcast_thread.setDaemon(True)
 broadcast_thread.start()
 
 # Start the app
