@@ -10,6 +10,8 @@ def broadcast_receive():
     while True:
         try:
             msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
+            if msg == 'TIMER ENDED':
+                window_frame.disable_entry_field()
             window_frame.push_broadcast_message(msg)
         except ConnectionResetError:
             print("Closed the broadcast connection")
@@ -217,6 +219,9 @@ class TkinterFrame:
 
     def set_role_label(self, role):
         self.role_label.config(text=role)
+
+    def disable_entry_field(self):
+        self.entry_field.config(state='disabled')
 
 
 def grid_configuration(node, colnum, rownum):
