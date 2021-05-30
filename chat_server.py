@@ -22,19 +22,18 @@ def client_handler(client):
         # Here the client closes the application before writing its name
         return
 
-
     # Welcomes the new user
     welcome_message = f"Welcome {name}! If you want to quit, write {{quit}}."
     client.send(bytes(welcome_message, "utf8"))
-    msg = f"{name} joined the chat!"
-    # Broadcast to all the users that a new user just joined the chat
-    broadcast(bytes(msg, "utf8"))
-    # Updates the client dictionary
-    clients[client] = name
     role = {
         "role": "Master"
     }
     client.send(bytes(json.dumps(role), "utf8"))
+    msg = f"{name} joined the chat with the role {role['role']}!"
+    # Broadcast to all the users that a new user just joined the chat
+    broadcast(bytes(msg, "utf8"))
+    # Updates the client dictionary
+    clients[client] = name
 
     # Listening for new messages from the chat
     while True:
@@ -46,6 +45,7 @@ def client_handler(client):
                 client.send(bytes("{quit}", "utf8"))
                 client.close()
                 del clients[client]
+                del addresses[client]
                 broadcast(bytes(f"{name} quit.", "utf8"))
                 print(f'{client} disconnected from the chat')
                 break
@@ -53,6 +53,7 @@ def client_handler(client):
             # Here the client already closed its socket
             # so this Error is raised because socket.close() cannot be performed
             del clients[client]
+            del addresses[client]
             broadcast(bytes(f"{name} quit.", "utf8"))
             print(f'{name} disconnected from the chat')
             break
