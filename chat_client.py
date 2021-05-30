@@ -4,6 +4,16 @@ import tkinter as tkt
 import json
 
 
+def broadcast_receive():
+    broadcast_socket.send("BROADCAST")
+    while True:
+        try:
+            msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
+            window_frame.push_broadcast_message(msg)
+        except ConnectionResetError:
+            print("Closed the broadcast connection")
+
+
 def receive_from_server():
     global game_loop
     """Function for handling messages from the server"""
@@ -105,6 +115,12 @@ def read_message():
     message = client_socket.recv(BUFFER_SIZE).decode("utf8")
     return list(filter(None, message.split('\r\n\r\n')))
 
+def build_scrollable_listbox(parent):
+    scrollbar = tkt.Scrollbar(parent)
+    listbox = tkt.Listbox(parent, yscrollcommand=scrollbar.set)
+    scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
+    listbox.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
+    return listbox
 
 class TkinterFrame:
     """Class for handling the main frame"""
@@ -115,23 +131,25 @@ class TkinterFrame:
         self.window = tkt.Tk()
         self.window.geometry("400x400")
         self.window.title("Chat Project")
-        grid_configuration(self.window, 1, 4)
+        grid_configuration(self.window, 2, 4)
         # Role label
         self.role_label = tkt.Label()
         self.role_label.grid(column=0, row=0, sticky="nsew")
 
         self.messages_frame = tkt.Frame(self.window)
         self.message_property = tkt.StringVar()
-        scrollbar = tkt.Scrollbar(self.messages_frame)
-        self.msg_list = tkt.Listbox(self.messages_frame, yscrollcommand=scrollbar.set)
-        scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
-        self.msg_list.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
+        # Message list
+        self.msg_list = build_scrollable_listbox(self.messages_frame)
         self.messages_frame.grid(column=0, row=1, sticky="nsew")
         self.entry_field = tkt.Entry(self.window, textvariable=self.message_property)
         self.entry_field.bind("<Return>", button_send_action)
         self.entry_field.grid(column=0, row=2, sticky="nsew")
         self.send_button = tkt.Button(self.window, text="Send", command=button_send_action)
         self.send_button.grid(column=0, row=3, sticky="nsew")
+        # Broadcast list
+        self.broadcast_pane = tkt.Frame(self.window)
+        self.broadcast_list = build_scrollable_listbox(self.broadcast_pane)
+        self.broadcast_pane.grid(column=1, row=1, sticky="nsew")
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
 
     def __on_closing(self):
@@ -154,6 +172,10 @@ class TkinterFrame:
     def push_message(self, message):
         """Push a message into the message list"""
         self.msg_list.insert(tkt.END, message)
+
+    def push_broadcast_message(self, message):
+        """Push a message into the broadcast list"""
+        self.broadcast_list.insert(tkt.END, message)
 
     def set_role_label(self, role):
         self.role_label.config(text=role)
@@ -194,7 +216,14 @@ ADDRESS = (HOST, PORT)
 client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect(ADDRESS)
 
+broadcast_socket = socket(AF_INET, SOCK_STREAM)
+broadcast_socket.connect(ADDRESS)
+
 receive_thread = Thread(target=receive_from_server)
 receive_thread.start()
+
+broadcast_thread = Thread(target=broadcast_receive)
+broadcast_thread.start()
+
 # Start the app
 tkt.mainloop()
