@@ -21,6 +21,10 @@ def client_handler(client: socket):
         broadcast_clients.append(client)
         return
 
+    if name == "LEADERBOARD":
+        leaderboard_clients.append(client)
+        return
+
     if name == "{quit}":
         # Here the client closes the application before writing its name
         return
@@ -93,6 +97,7 @@ def client_handler(client: socket):
                 score[client] = score[client] - 1
 
             broadcast(f"{name} got a point, its current score is {score[client]}")
+            broadcast_leaderboard()
             socket_send(client, json.dumps({"score": score[client]}))
         except ConnectionResetError:
             # Here the client already closed its socket
@@ -118,6 +123,20 @@ def broadcast(message: str, prefix=""):
     for user in broadcast_to_delete:
         broadcast_clients.remove(user)
 
+def broadcast_leaderboard():
+    ordered_leaderboard = dict((clients[k], v) for (k, v) in sorted(score.items(),
+                                                                    key=lambda item: item[1],
+                                                                    reverse=True))
+    leaderboard_to_delete = []
+    for user in leaderboard_clients:
+        try:
+            socket_send(user, json.dumps(ordered_leaderboard))
+        except ConnectionResetError:
+            leaderboard_to_delete.append(user)
+            print("A leaderboard disconnected")
+
+    for user in leaderboard_to_delete:
+        leaderboard_clients.remove(user)
 
 def socket_send(sock: socket, message):
     """Send a message to the socket with utf8 encoding"""
@@ -140,6 +159,7 @@ clients = {}
 addresses = {}
 score = {}
 broadcast_clients = []
+leaderboard_clients = []
 
 HOST = 'localhost'
 PORT = 53000
