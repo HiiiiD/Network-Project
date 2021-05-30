@@ -1,5 +1,5 @@
 from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread
+from threading import Thread, Timer
 import json
 
 
@@ -124,6 +124,7 @@ def broadcast(message: str, prefix=""):
     for user in broadcast_to_delete:
         broadcast_clients.remove(user)
 
+
 def broadcast_leaderboard():
     ordered_leaderboard = dict((clients[k], v) for (k, v) in sorted(score.items(),
                                                                     key=lambda item: item[1],
@@ -138,6 +139,7 @@ def broadcast_leaderboard():
 
     for user in leaderboard_to_delete:
         leaderboard_clients.remove(user)
+
 
 def socket_send(sock: socket, message):
     """Send a message to the socket with utf8 encoding"""
@@ -161,6 +163,7 @@ addresses = {}
 score = {}
 broadcast_clients = []
 leaderboard_clients = []
+timer_clients = []
 
 HOST = 'localhost'
 PORT = 53000
@@ -169,6 +172,8 @@ ADDRESS = (HOST, PORT)
 
 SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDRESS)
+
+timer = Timer(5 * 60, broadcast, ['TIMER ENDED'])
 
 if __name__ == "__main__":
     SERVER.listen(5)
