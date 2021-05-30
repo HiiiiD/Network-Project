@@ -26,7 +26,6 @@ def leaderboard_receive():
         try:
             msg = leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
             window_frame.delete_leaderboard_content()
-            print(msg)
             parsed_msg = json.loads(msg)
             for (k, v) in parsed_msg.items():
                 window_frame.push_leaderboard_message(f"{k}:{v}")
