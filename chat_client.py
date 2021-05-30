@@ -7,26 +7,30 @@ import json
 def receive_from_server():
     """Function for handling messages from the server"""
     try:
-        #Message telling the instructions
+        # Message telling the instructions
         instructions_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window_frame.push_message(instructions_msg)
         # Welcome message
         welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window_frame.push_message(welcome_msg)
-        role_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+        received_message = client_socket.recv(BUFFER_SIZE).decode("utf8")
+        # Split the message because two messages are sent
+        splitted_message = received_message.split('\r\n\r\n')
+        role_msg = splitted_message[0]
         window_frame.set_role_label(json.loads(role_msg)["role"])
+        window_frame.push_message(splitted_message[1])
     except OSError:
+        print("Closed the connection")
         return
-
 
     while True:
         try:
             """Listening for messages from the server"""
             msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
-            print(msg)
             """Push the message to the message list"""
             window_frame.push_message(msg)
         except OSError:
+            print("Closed the connection")
             break
 
 
@@ -49,7 +53,7 @@ class TkinterFrame:
         self.window = tkt.Tk()
         self.window.title("Chat Project")
         grid_configuration(self.window, 1, 4)
-        #Role label
+        # Role label
         self.role_label = tkt.Label()
         self.role_label.grid(column=0, row=0, sticky="nsew")
 
@@ -90,7 +94,6 @@ class TkinterFrame:
 
     def set_role_label(self, role):
         self.role_label.config(text=role)
-
 
 
 def grid_configuration(node, colnum, rownum):
