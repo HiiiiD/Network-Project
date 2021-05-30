@@ -23,6 +23,7 @@ def client_handler(client: socket):
 
     if name == "LEADERBOARD":
         leaderboard_clients.append(client)
+        broadcast_leaderboard()
         return
 
     if name == "{quit}":
