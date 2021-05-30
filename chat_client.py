@@ -6,6 +6,19 @@ import json
 
 def receive_from_server():
     """Function for handling messages from the server"""
+    try:
+        #Message telling the instructions
+        instructions_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+        window_frame.push_message(instructions_msg)
+        # Welcome message
+        welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+        window_frame.push_message(welcome_msg)
+        role_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+        window_frame.set_role_label(json.loads(role_msg)["role"])
+    except OSError:
+        return
+
+
     while True:
         try:
             """Listening for messages from the server"""
@@ -89,6 +102,7 @@ def grid_configuration(node, colnum, rownum):
 
 
 DEFAULT_PORT = 53000
+DEFAULT_HOST = 'localhost'
 
 # ----Connection to the Server----
 HOST = input('Write the Host server: ')
@@ -97,6 +111,9 @@ if not PORT:
     PORT = DEFAULT_PORT
 else:
     PORT = int(PORT)
+
+if not HOST:
+    HOST = DEFAULT_HOST
 
 window_frame = TkinterFrame(send_to_server)
 
