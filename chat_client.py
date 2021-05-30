@@ -1,11 +1,14 @@
 from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread
+from threading import Thread, Condition, Lock
 import tkinter as tkt
 import json
 
 
 def receive_from_server():
+    global game_loop
     """Function for handling messages from the server"""
+
+    # Initial communication
     try:
         # Message telling the instructions
         instructions_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
@@ -23,25 +26,81 @@ def receive_from_server():
         print("Closed the connection")
         return
 
+    with lock_obj:
+        game_loop = True
+    # Game loop
     while True:
         try:
-            """Listening for messages from the server"""
-            msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
-            """Push the message to the message list"""
-            window_frame.push_message(msg)
+            # Retrieve the questions
+            questions = json.loads(read_message()[0])
+            # Show the questions
+            show_alternatives(questions)
+            # Retrieve the selected question from the combo box
+            with lock_obj:
+                selection_cond_variable.wait()
+            selected_question = window_frame.peek_message()
+            window_frame.reset_message()
+            # Send the selected question to the server
+            client_socket.send(bytes(selected_question, "utf8"))
+            response = read_message()
+            question_response = json.loads(response[0])
+            # A trick question has been selected
+            if question_response["status"] == "LOST":
+                # Push the broadcast message
+                window_frame.push_message(response[1])
+                # Close the window
+                window_frame.close_window()
+                return
+            # If a not-trick question has been chosen
+            # Retrieve the choices
+            choices = question_response["choices"]
+            # Show the choices
+            show_alternatives(choices)
+            # Make the user type the selected choice
+            with lock_obj:
+                selection_cond_variable.wait()
+            # Retrieve the selected choice
+            selected_choice = window_frame.peek_message()
+            window_frame.reset_message()
+            # Send the selected choice to the server
+            client_socket.send(bytes(selected_choice, "utf8"))
+            response = read_message()
+            # Read the broadcast message with the new score
+            window_frame.push_message(response[0])
+            # Write the new score
+            window_frame.push_message("Current score:" + json.loads(response[1])["score"])
         except OSError:
             print("Closed the connection")
             break
 
 
+def show_alternatives(elems):
+    for i in range(len(elems)):
+        window_frame.push_message(f"{i}. {elems[i]}")
+
+
+def text_selecting():
+    selection_cond_variable.notify()
+
+
 def send_to_server(event=None):
-    """Function for sending data to the server"""
+    """Function for sending messages to the server"""
     msg = window_frame.peek_message()
-    window_frame.reset_message()
-    client_socket.send(bytes(msg, "utf8"))
     if msg == "{quit}":
+        client_socket.send(bytes(msg, "utf8"))
         client_socket.close()
         window_frame.close_window()
+        return
+
+    with lock_obj:
+        if game_loop:
+            text_selecting()
+
+
+def read_message():
+    """Read a message from the server, then return a list of messages sent by the server"""
+    message = client_socket.recv(BUFFER_SIZE).decode("utf8")
+    return message.split('\r\n\r\n')
 
 
 class TkinterFrame:
@@ -118,6 +177,12 @@ else:
 
 if not HOST:
     HOST = DEFAULT_HOST
+
+# Sync objects
+selection_cond_variable = Condition()
+lock_obj = Lock()
+
+game_loop = False
 
 window_frame = TkinterFrame(send_to_server)
 
