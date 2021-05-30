@@ -86,10 +86,11 @@ def client_handler(client):
             received_choice = client.recv(BUFFER_SIZE)
             if received_choice == question_to_answer["right_answer"]:
                 score[client] = score[client] + 1
-                broadcast(f"{name} got a point, its current score is {score[client]}")
             else:
                 score[client] = score[client] - 1
-                broadcast(f"{name} lost a point, its current score is {score[client]}")
+
+            socket_send(client, json.dumps({"score": score[client]}))
+            broadcast(f"{name} got a point, its current score is {score[client]}")
         except ConnectionResetError:
             # Here the client already closed its socket
             # so this Error is raised because socket.close() cannot be performed
