@@ -1,11 +1,11 @@
 from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread, Condition, Lock
+from threading import Thread, Condition
 import tkinter as tkt
 import json
 
 
 def broadcast_receive():
-    welcome_msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
+    broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
     broadcast_socket.send(bytes("BROADCAST", "utf8"))
     while True:
         try:
@@ -13,6 +13,24 @@ def broadcast_receive():
             window_frame.push_broadcast_message(msg)
         except ConnectionResetError:
             print("Closed the broadcast connection")
+            return
+
+
+def leaderboard_receive():
+    # Get the welcome message
+    leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
+    leaderboard_socket.send(bytes("LEADERBOARD", "utf8"))
+    while True:
+        try:
+
+            msg = leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
+            window_frame.delete_leaderboard_content()
+            print(msg)
+            parsed_msg = json.loads(msg)
+            for (k, v) in parsed_msg.items():
+                window_frame.push_leaderboard_message(f"{k}:{v}")
+        except ConnectionResetError:
+            print("Closed the leaderboard connection")
             return
 
 
@@ -39,12 +57,15 @@ def receive_from_server():
     with selection_cond_variable:
         game_loop = True
 
+    first_run = True
+
     # Game loop
     while True:
         try:
             # Retrieve the questions
-            if len(received_message) == 3:
+            if len(received_message) == 3 and first_run:
                 questions = json.loads(received_message[2])
+                first_run = False
             else:
                 questions = json.loads(read_message()[0])
 
@@ -187,6 +208,14 @@ class TkinterFrame:
         """Push a message into the broadcast list"""
         self.broadcast_list.insert(tkt.END, message)
 
+    def push_leaderboard_message(self, message):
+        """Push a message into the leaderboard list"""
+        self.leaderboard_list.insert(tkt.END, message)
+
+    def delete_leaderboard_content(self):
+        """Delete all the items"""
+        self.leaderboard_list.delete(0, tkt.END)
+
     def set_role_label(self, role):
         self.role_label.config(text=role)
 
@@ -229,6 +258,9 @@ client_socket.connect(ADDRESS)
 broadcast_socket = socket(AF_INET, SOCK_STREAM)
 broadcast_socket.connect(ADDRESS)
 
+leaderboard_socket = socket(AF_INET, SOCK_STREAM)
+leaderboard_socket.connect(ADDRESS)
+
 receive_thread = Thread(target=receive_from_server)
 receive_thread.setDaemon(True)
 receive_thread.start()
@@ -236,6 +268,10 @@ receive_thread.start()
 broadcast_thread = Thread(target=broadcast_receive)
 broadcast_thread.setDaemon(True)
 broadcast_thread.start()
+
+leaderboard_thread = Thread(target=leaderboard_receive)
+leaderboard_thread.setDaemon(True)
+leaderboard_thread.start()
 
 # Start the app
 tkt.mainloop()
