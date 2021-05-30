@@ -1,5 +1,6 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
+import json
 
 
 def accept_incoming_connections():
@@ -16,6 +17,12 @@ def accept_incoming_connections():
 def client_handler(client):
     """Handles a single client"""
     name = client.recv(BUFFER_SIZE).decode("utf8")
+
+    if name == "{quit}":
+        # Here the client closes the application before writing its name
+        return
+
+
     # Welcomes the new user
     welcome_message = f"Welcome {name}! If you want to quit, write {{quit}}."
     client.send(bytes(welcome_message, "utf8"))
@@ -24,6 +31,10 @@ def client_handler(client):
     broadcast(bytes(msg, "utf8"))
     # Updates the client dictionary
     clients[client] = name
+    role = {
+        "role": "Master"
+    }
+    client.send(bytes(json.dumps(role), "utf8"))
 
     # Listening for new messages from the chat
     while True:
