@@ -5,13 +5,15 @@ import json
 
 
 def broadcast_receive():
-    broadcast_socket.send("BROADCAST")
+    welcome_msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
+    broadcast_socket.send(bytes("BROADCAST", "utf8"))
     while True:
         try:
             msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
             window_frame.push_broadcast_message(msg)
         except ConnectionResetError:
             print("Closed the broadcast connection")
+            return
 
 
 def receive_from_server():
@@ -45,6 +47,8 @@ def receive_from_server():
                 questions = json.loads(received_message[2])
             else:
                 questions = json.loads(read_message()[0])
+
+            window_frame.push_message("Questions")
             # Show the questions
             show_alternatives(questions)
             # Retrieve the selected question from the combo box
@@ -67,6 +71,8 @@ def receive_from_server():
             # If a not-trick question has been chosen
             # Retrieve the choices
             choices = question_response["choices"]
+
+            window_frame.push_message("Choices")
             # Show the choices
             show_alternatives(choices)
             # Make the user type the selected choice
@@ -115,12 +121,14 @@ def read_message():
     message = client_socket.recv(BUFFER_SIZE).decode("utf8")
     return list(filter(None, message.split('\r\n\r\n')))
 
+
 def build_scrollable_listbox(parent):
     scrollbar = tkt.Scrollbar(parent)
     listbox = tkt.Listbox(parent, yscrollcommand=scrollbar.set)
     scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
     listbox.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
     return listbox
+
 
 class TkinterFrame:
     """Class for handling the main frame"""
