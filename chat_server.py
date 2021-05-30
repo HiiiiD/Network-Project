@@ -24,7 +24,7 @@ def client_handler(client):
 
     # Welcomes the new user
     welcome_message = f"Welcome {name}! If you want to quit, write {{quit}}."
-    socket_send(client, bytes(welcome_message, "utf8"))
+    socket_send(client, welcome_message)
     role = {
         "role": "Master"
     }
