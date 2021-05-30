@@ -8,7 +8,7 @@ def accept_incoming_connections():
     while True:
         client, client_address = SERVER.accept()
         print(f"{client}:{client_address} joined.")
-        client.send(bytes("Write your name, then press Return or click the Send button to join!", "utf8"))
+        socket_send(client, "Write your name, then press Return or click the Send button to join!")
         addresses[client] = client_address
         # A thread for each client
         Thread(target=client_handler, args=(client,)).start()
@@ -24,50 +24,105 @@ def client_handler(client):
 
     # Welcomes the new user
     welcome_message = f"Welcome {name}! If you want to quit, write {{quit}}."
-    client.send(bytes(welcome_message, "utf8"))
+    socket_send(client, bytes(welcome_message, "utf8"))
     role = {
         "role": "Master"
     }
-    client.send(bytes(json.dumps(role) + "\r\n\r\n", "utf8"))
-    client.send(bytes(f"Your role is: {role['role']}", "utf8"))
+    socket_send(client, json.dumps(role))
+    socket_send(client, f"Your role is: {role['role']}")
     msg = f"{name} joined the chat with the role {role['role']}!"
     # Broadcast to all the users that a new user just joined the chat
-    broadcast(bytes(msg, "utf8"))
+    broadcast(msg)
     # Updates the client dictionary
     clients[client] = name
+    score[client] = 0
 
-    # Listening for new messages from the chat
+    # Game loop
+    first_question = {
+        "question": "What's your name?",
+        "choices": [
+            "Test1",
+            "Test2",
+            "Test3"
+        ],
+        "right_answer": "Test2"
+    }
+    second_question = {
+        "question": "What's your surname?",
+        "choices": [
+            "Test1",
+            "Test2",
+            "Test3"
+        ],
+        "right_answer": "Test1"
+    }
+    third_question = {
+        "question": "What's your full name?",
+        "choices": [
+            "Test1",
+            "Test2",
+            "Test3"
+        ],
+        "right_answer": "Test3"
+    }
+
+    all_questions = [first_question, second_question, third_question]
+
+    trick_question = third_question
+    questions = map(lambda q: q["question"], all_questions)
     while True:
         try:
-            msg = client.recv(BUFFER_SIZE)
-            if msg != bytes("{quit}", "utf8"):
-                broadcast(msg, name + ": ")
-            else:
-                client.send(bytes("{quit}", "utf8"))
+            socket_send(client, json.dumps(questions))
+            received_question = client.recv(BUFFER_SIZE)
+            if received_question == trick_question["question"]:
+                socket_send(client, json.dumps({"status": "LOST"}))
+                broadcast(f"{name} have been tricked")
                 client.close()
-                del clients[client]
-                del addresses[client]
-                broadcast(bytes(f"{name} quit.", "utf8"))
-                print(f'{client} disconnected from the chat')
-                break
+                user_quit(client, name)
+                return
+
+            question_to_answer = next(q for q in all_questions if q["question"] == received_question)
+            socket_send(client, json.dumps({"status": "NOT_LOST", "choices": question_to_answer["choices"]}))
+            received_choice = client.recv(BUFFER_SIZE)
+            if received_choice == question_to_answer["right_answer"]:
+                score[client] = score[client] + 1
+                broadcast(f"{name} got a point, its current score is {score[client]}")
+            else:
+                score[client] = score[client] - 1
+                broadcast(f"{name} lost a point, its current score is {score[client]}")
         except ConnectionResetError:
             # Here the client already closed its socket
             # so this Error is raised because socket.close() cannot be performed
-            del clients[client]
-            del addresses[client]
-            broadcast(bytes(f"{name} quit.", "utf8"))
-            print(f'{name} disconnected from the chat')
+            user_quit(client, name)
             break
 
 
 def broadcast(message, prefix=""):
     """Broadcast a message to all the clients"""
     for user in clients:
-        user.send(bytes(prefix, "utf8") + message)
+        socket_send(user, prefix + message)
+
+
+def socket_send(sock: socket, message):
+    """Send a message to the socket with utf8 encoding"""
+    sock.send(bytes(message + "\r\n\r\n", "utf8"))
+
+
+def delete_client(client):
+    del clients[client]
+    del addresses[client]
+    del score[client]
+
+
+def user_quit(client, name):
+    delete_client(client)
+    broadcast(bytes(f"{name} quit.", "utf8"))
+    print(f'{name} disconnected from the chat')
 
 
 clients = {}
 addresses = {}
+score = {}
 
 HOST = 'localhost'
 PORT = 53000
