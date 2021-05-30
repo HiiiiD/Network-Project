@@ -1,6 +1,7 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import tkinter as tkt
+import json
 
 
 def receive_from_server():
@@ -9,6 +10,7 @@ def receive_from_server():
         try:
             """Listening for messages from the server"""
             msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+            print(msg)
             """Push the message to the message list"""
             window_frame.push_message(msg)
         except OSError:
@@ -33,19 +35,23 @@ class TkinterFrame:
         self.button_send_action = button_send_action
         self.window = tkt.Tk()
         self.window.title("Chat Project")
+        grid_configuration(self.window, 1, 4)
+        #Role label
+        self.role_label = tkt.Label()
+        self.role_label.grid(column=0, row=0, sticky="nsew")
+
         self.messages_frame = tkt.Frame(self.window)
         self.message_property = tkt.StringVar()
         scrollbar = tkt.Scrollbar(self.messages_frame)
         self.msg_list = tkt.Listbox(self.messages_frame, yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
-        self.msg_list.pack(side=tkt.LEFT, fill=tkt.BOTH)
-        self.msg_list.pack(anchor="nw")
-        self.messages_frame.pack()
+        self.msg_list.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
+        self.messages_frame.grid(column=0, row=1, sticky="nsew")
         self.entry_field = tkt.Entry(self.window, textvariable=self.message_property)
         self.entry_field.bind("<Return>", button_send_action)
-        self.entry_field.pack()
+        self.entry_field.grid(column=0, row=2, sticky="nsew")
         self.send_button = tkt.Button(self.window, text="Send", command=button_send_action)
-        self.send_button.pack()
+        self.send_button.grid(column=0, row=3, sticky="nsew")
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
 
     def __on_closing(self):
@@ -68,6 +74,18 @@ class TkinterFrame:
     def push_message(self, message):
         """Push a message into the message list"""
         self.msg_list.insert(tkt.END, message)
+
+    def set_role_label(self, role):
+        self.role_label.config(text=role)
+
+
+
+def grid_configuration(node, colnum, rownum):
+    for i in range(colnum):
+        node.grid_columnconfigure(i, weight=1)
+
+    for i in range(rownum):
+        node.grid_rowconfigure(i, weight=1)
 
 
 DEFAULT_PORT = 53000
