@@ -51,6 +51,7 @@ class TkinterFrame:
         """Initialize the window"""
         self.button_send_action = button_send_action
         self.window = tkt.Tk()
+        self.window.geometry("400x400")
         self.window.title("Chat Project")
         grid_configuration(self.window, 1, 4)
         # Role label
