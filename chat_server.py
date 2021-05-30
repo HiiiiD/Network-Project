@@ -28,7 +28,8 @@ def client_handler(client):
     role = {
         "role": "Master"
     }
-    client.send(bytes(json.dumps(role), "utf8"))
+    client.send(bytes(json.dumps(role) + "\r\n\r\n", "utf8"))
+    client.send(bytes(f"Your role is: {role['role']}", "utf8"))
     msg = f"{name} joined the chat with the role {role['role']}!"
     # Broadcast to all the users that a new user just joined the chat
     broadcast(bytes(msg, "utf8"))
