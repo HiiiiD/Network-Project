@@ -17,6 +17,9 @@ def accept_incoming_connections():
 def client_handler(client: socket):
     """Handles a single client"""
     name = client.recv(BUFFER_SIZE).decode("utf8")
+    if name == "BROADCAST":
+        broadcast_clients.append(client)
+        return
 
     if name == "{quit}":
         # Here the client closes the application before writing its name
@@ -104,8 +107,16 @@ def client_handler(client: socket):
 
 def broadcast(message: str, prefix=""):
     """Broadcast a message to all the clients"""
-    for user in clients:
-        socket_send(user, prefix + message)
+    broadcast_to_delete = []
+    for user in broadcast_clients:
+        try:
+            socket_send(user, prefix + message)
+        except ConnectionResetError:
+            broadcast_to_delete.append(user)
+            print("A broadcast disconnected")
+
+    for user in broadcast_to_delete:
+        broadcast_clients.remove(user)
 
 
 def socket_send(sock: socket, message):
@@ -128,6 +139,7 @@ def user_quit(client, name):
 clients = {}
 addresses = {}
 score = {}
+broadcast_clients = []
 
 HOST = 'localhost'
 PORT = 53000
