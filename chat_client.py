@@ -22,7 +22,6 @@ def leaderboard_receive():
     leaderboard_socket.send(bytes("LEADERBOARD", "utf8"))
     while True:
         try:
-
             msg = leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
             window_frame.delete_leaderboard_content()
             print(msg)
@@ -34,7 +33,7 @@ def leaderboard_receive():
             return
 
 
-def receive_from_server():
+def client_receive():
     global game_loop
     """Function for handling messages from the server"""
 
@@ -261,7 +260,7 @@ broadcast_socket.connect(ADDRESS)
 leaderboard_socket = socket(AF_INET, SOCK_STREAM)
 leaderboard_socket.connect(ADDRESS)
 
-receive_thread = Thread(target=receive_from_server)
+receive_thread = Thread(target=client_receive)
 receive_thread.setDaemon(True)
 receive_thread.start()
 
