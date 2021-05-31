@@ -99,6 +99,10 @@ class TkinterApplication(tkt.Tk):
         """Clear the leaderboard"""
         self.__leaderboard_pane.flush_leaderboard()
 
+    def disable_inputs(self):
+        """Disable the input field and the button"""
+        self.__quiz_pane.disable_inputs()
+
 
 class _TopPane(tkt.Frame):
     """Top pane that contains a role label and a score label"""
