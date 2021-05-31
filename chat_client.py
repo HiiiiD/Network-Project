@@ -3,7 +3,7 @@ from threading import Thread, Condition
 import tkinter as tkt
 import json
 from GUI import TkinterApplication
-from tkinterutils import configure_grid, build_scrollable_listbox
+from client_utils import create_socket_thread
 
 
 def broadcast_receive():
@@ -170,26 +170,9 @@ window = TkinterApplication(send_to_server)
 BUFFER_SIZE = 1024
 ADDRESS = (HOST, PORT)
 
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDRESS)
-
-broadcast_socket = socket(AF_INET, SOCK_STREAM)
-broadcast_socket.connect(ADDRESS)
-
-leaderboard_socket = socket(AF_INET, SOCK_STREAM)
-leaderboard_socket.connect(ADDRESS)
-
-receive_thread = Thread(target=client_receive)
-receive_thread.setDaemon(True)
-receive_thread.start()
-
-broadcast_thread = Thread(target=broadcast_receive)
-broadcast_thread.setDaemon(True)
-broadcast_thread.start()
-
-leaderboard_thread = Thread(target=leaderboard_receive)
-leaderboard_thread.setDaemon(True)
-leaderboard_thread.start()
+client_socket, client_thread = create_socket_thread(ADDRESS, client_receive)
+broadcast_socket, broadcast_thread = create_socket_thread(ADDRESS, broadcast_receive)
+leaderboard_socket, leaderboard_thread = create_socket_thread(ADDRESS, leaderboard_receive)
 
 # Start the app
 tkt.mainloop()
