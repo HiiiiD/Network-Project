@@ -1,8 +1,8 @@
-from threading import Condition
+from socket import socket, AF_INET, SOCK_STREAM
+from threading import Condition, Thread
 import tkinter as tkt
 import json
 from typing import Any, List
-
 from GUI import TkinterApplication
 import client_utils as cu
 
@@ -73,6 +73,10 @@ def client_receive():
                 questions = json.loads(cu.read_message(client_socket)[0])
 
             question_response = manage_questions(questions)
+            if question_response is None:
+                continue
+            if question_response["status"] == "LOST":
+                break
             # If a not-trick question has been chosen
             # Retrieve the choices
             choices = question_response["choices"]
@@ -106,17 +110,17 @@ def manage_questions(questions: List[str]):
     selected_question = window.peek_message()
     # Perform a check in order to have a valid question number
     if selected_question.isnumeric():
-        numeric_selected_question = int(selected_question)
+        numeric_selected_question = int(selected_question) - 1
         if numeric_selected_question < 0 or numeric_selected_question >= len(questions):
             client_socket.send(bytes("VALIDATION ERROR", "utf8"))
             print("Invalid question number")
             restart_game()
-            return
+            return None
     else:
         client_socket.send(bytes("VALIDATION ERROR", "utf8"))
         print("Question number must be a number")
         restart_game()
-        return
+        return None
     # Reset the text field
     window.reset_field()
     # Send the selected question to the server
@@ -128,9 +132,8 @@ def manage_questions(questions: List[str]):
     # LOST status means that a TRICK question has been chosen
     if question_response["status"] == "LOST":
         print("You got a trick question")
-        # Close the window
-        window.quit()
-        return
+        window.close_window()
+        return question_response
 
     # If the user didn't pick a trick question, return the question response
     return question_response
@@ -148,7 +151,7 @@ def manage_choices(choices: List[str]):
     selected_choice = window.peek_message()
     # Perform a check in order to have a valid choice number
     if selected_choice.isnumeric():
-        numeric_selected_choice = int(selected_choice)
+        numeric_selected_choice = int(selected_choice) - 1
         if numeric_selected_choice < 0 or numeric_selected_choice >= len(choices):
             client_socket.send(bytes("VALIDATION ERROR", "utf8"))
             print("Invalid choice number")
@@ -160,7 +163,7 @@ def manage_choices(choices: List[str]):
         restart_game()
         return
     # Reset the text field
-    window.reset_message()
+    window.reset_field()
     # Send the selected choice to the server
     client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
     # Wait for a response that contains the new score
@@ -189,7 +192,6 @@ def send_to_server(event=None):
     if msg == "{quit}":
         client_socket.send(bytes(msg, "utf8"))
         client_socket.close()
-        window.close_window()
         return
 
     with selection_cond_variable:
@@ -197,7 +199,7 @@ def send_to_server(event=None):
             selection_cond_variable.notify(1)
         else:
             client_socket.send(bytes(msg, "utf8"))
-            window.reset_message()
+            window.reset_field()
 
 
 DEFAULT_PORT = 53000
@@ -224,9 +226,23 @@ window = TkinterApplication(send_to_server)
 BUFFER_SIZE = 1024
 ADDRESS = (HOST, PORT)
 
-client_socket, client_thread = cu.create_socket_thread(ADDRESS, client_receive)
-broadcast_socket, broadcast_thread = cu.create_socket_thread(ADDRESS, broadcast_receive)
-leaderboard_socket, leaderboard_thread = cu.create_socket_thread(ADDRESS, leaderboard_receive)
+client_socket = socket(AF_INET, SOCK_STREAM)
+client_socket.connect(ADDRESS)
+client_socket_thread = Thread(target=client_receive)
+client_socket_thread.setDaemon(True)
+client_socket_thread.start()
+
+broadcast_socket = socket(AF_INET, SOCK_STREAM)
+broadcast_socket.connect(ADDRESS)
+broadcast_socket_thread = Thread(target=broadcast_receive)
+broadcast_socket_thread.setDaemon(True)
+broadcast_socket_thread.start()
+
+leaderboard_socket = socket(AF_INET, SOCK_STREAM)
+leaderboard_socket.connect(ADDRESS)
+leaderboard_socket_thread = Thread(target=leaderboard_receive)
+leaderboard_socket_thread.setDaemon(True)
+leaderboard_socket_thread.start()
 
 # Start the app
 tkt.mainloop()
