@@ -31,17 +31,19 @@ def build_scrollable_listbox(parent: tkt.Misc):
     Returns
     -------
     tkinter.Listbox
-        Listbox with a scrollbar that scrolls on the Y axis
+        Listbox with a scrollbar that scrolls on the Y and X axis
     """
-    scrollbar = tkt.Scrollbar(parent)
-    listbox = tkt.Listbox(parent, yscrollcommand=scrollbar.set)
-    scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
+    vertical_scrollbar = tkt.Scrollbar(parent)
+    horizontal_scrollbar = tkt.Scrollbar(parent, orient='horizontal')
+    listbox = tkt.Listbox(parent, yscrollcommand=vertical_scrollbar.set, xscrollcommand=horizontal_scrollbar)
+    vertical_scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
+    horizontal_scrollbar.pack(side=tkt.BOTTOM, fill=tkt.X)
     listbox.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
     return listbox
 
 
 class ListBoxPane(tkt.Frame):
-    """Pane that contains a listbox with a vertical scrollbar"""
+    """Pane that contains a listbox with a vertical and horizontal scrollbar"""
 
     def __init__(self, parent):
         super().__init__(parent)
