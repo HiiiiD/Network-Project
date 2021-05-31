@@ -1,10 +1,10 @@
 from threading import Condition
 import tkinter as tkt
 import json
-from typing import Any
+from typing import Any, List
 
 from GUI import TkinterApplication
-from client_utils import create_socket_thread, read_message
+import client_utils as cu
 
 
 def broadcast_receive():
@@ -12,7 +12,7 @@ def broadcast_receive():
     broadcast_socket.send(bytes("BROADCAST", "utf8"))
     while True:
         try:
-            msg = read_message(broadcast_socket)[0]
+            msg = cu.read_message(broadcast_socket)[0]
             if msg == 'TIMER ENDED':
                 window.disable_inputs()
             window.push_broadcast_message(msg)
@@ -27,7 +27,7 @@ def leaderboard_receive():
     leaderboard_socket.send(bytes("LEADERBOARD", "utf8"))
     while True:
         try:
-            msg = read_message(leaderboard_socket)[0]
+            msg = cu.read_message(leaderboard_socket)[0]
             window.clear_leaderboard()
             parsed_msg = json.loads(msg)
             for (k, v) in parsed_msg.items():
@@ -49,7 +49,7 @@ def client_receive():
         # Welcome message
         welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window.push_client_message(welcome_msg)
-        received_message = read_message(client_socket)
+        received_message = cu.read_message(client_socket)
         role_msg = received_message[0]
         window.set_role(json.loads(role_msg)["role"])
         window.push_client_message(received_message[1])
@@ -70,7 +70,7 @@ def client_receive():
                 questions = json.loads(received_message[2])
                 first_run = False
             else:
-                questions = json.loads(read_message(client_socket)[0])
+                questions = json.loads(cu.read_message(client_socket)[0])
 
             question_response = manage_questions(questions)
             # If a not-trick question has been chosen
@@ -82,7 +82,7 @@ def client_receive():
             break
 
 
-def manage_questions(questions: list[str]):
+def manage_questions(questions: List[str]):
     """Manage the loading/selection of the question to answer
 
     Parameters
@@ -122,7 +122,7 @@ def manage_questions(questions: list[str]):
     # Send the selected question to the server
     client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
     # Wait for a response that contains a status
-    response = read_message(client_socket)
+    response = cu.read_message(client_socket)
     # Parse the first argument of the response that is a json that indicates the status
     question_response = json.loads(response[0])
     # LOST status means that a TRICK question has been chosen
@@ -136,7 +136,7 @@ def manage_questions(questions: list[str]):
     return question_response
 
 
-def manage_choices(choices: list[str]):
+def manage_choices(choices: List[str]):
     # Show the choices message
     window.push_client_message("Choices")
     # Show the alternatives
@@ -164,7 +164,7 @@ def manage_choices(choices: list[str]):
     # Send the selected choice to the server
     client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
     # Wait for a response that contains the new score
-    response = read_message(client_socket)
+    response = cu.read_message(client_socket)
     new_score = int(json.loads(response[0])['score'])
     # Write the new score
     window.set_score(new_score)
@@ -176,7 +176,7 @@ def restart_game():
     window.reset_field()
 
 
-def show_alternatives(elems: list[Any]):
+def show_alternatives(elems: List[Any]):
     """Show all the elements, one by one, in the client listbox"""
     for i in range(len(elems)):
         window.push_client_message(f"{i + 1}. {elems[i]}")
@@ -224,9 +224,9 @@ window = TkinterApplication(send_to_server)
 BUFFER_SIZE = 1024
 ADDRESS = (HOST, PORT)
 
-client_socket, client_thread = create_socket_thread(ADDRESS, client_receive)
-broadcast_socket, broadcast_thread = create_socket_thread(ADDRESS, broadcast_receive)
-leaderboard_socket, leaderboard_thread = create_socket_thread(ADDRESS, leaderboard_receive)
+client_socket, client_thread = cu.create_socket_thread(ADDRESS, client_receive)
+broadcast_socket, broadcast_thread = cu.create_socket_thread(ADDRESS, broadcast_receive)
+leaderboard_socket, leaderboard_thread = cu.create_socket_thread(ADDRESS, leaderboard_receive)
 
 # Start the app
 tkt.mainloop()
