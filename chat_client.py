@@ -108,7 +108,9 @@ def client_receive():
             client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
             response = read_message(client_socket)
             # Write the new score
-            window.push_client_message(f"Current score: {json.loads(response[0])['score']}")
+            new_score = int(json.loads(response[0])['score'])
+            window.clear_quiz_listbox()
+            window.set_score(new_score)
         except OSError:
             print("Closed the connection")
             break

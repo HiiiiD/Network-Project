@@ -97,7 +97,11 @@ class TkinterApplication(tkt.Tk):
 
     def clear_leaderboard(self):
         """Clear the leaderboard"""
-        self.__leaderboard_pane.flush_leaderboard()
+        self.__leaderboard_pane.flush_listbox()
+
+    def clear_quiz_listbox(self):
+        """Clear the quiz listbox"""
+        self.__quiz_pane.flush_listbox()
 
     def disable_inputs(self):
         """Disable the input field and the button"""
@@ -134,7 +138,18 @@ class _CommonAppPane(tkt.Frame):
         self._listbox_pane = ListBoxPane(self)
 
     def push_message(self, msg: str):
+        """Push a message to the listbox
+
+        Parameters
+        ----------
+        msg : str
+            Message to push
+        """
         self._listbox_pane.listbox.insert(tkt.END, msg)
+
+    def flush_listbox(self):
+        """Delete all the elements of the listbox"""
+        self._listbox_pane.listbox.delete(0, tkt.END)
 
 
 class _QuizPane(_CommonAppPane):
@@ -152,6 +167,7 @@ class _QuizPane(_CommonAppPane):
         self.__send_button.grid(column=0, row=3, sticky="nsew")
 
     def disable_inputs(self):
+        """Disable the entry field and the button"""
         self.__entry_field.config(state='disabled')
         self.__send_button.config(state='disabled')
 
@@ -174,6 +190,3 @@ class _LeaderboardPane(_CommonAppPane):
         configure_grid(self, 1, 2)
         self._label.grid(column=0, row=0, sticky="nsew")
         self._listbox_pane.grid(column=0, row=1, sticky="nsew")
-
-    def flush_leaderboard(self):
-        self._listbox_pane.listbox.delete(0, tkt.END)
