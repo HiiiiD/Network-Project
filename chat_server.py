@@ -55,6 +55,8 @@ def client_handler(client: socket):
         try:
             socket_send(client, json.dumps(questions))
             received_question = client.recv(BUFFER_SIZE).decode("utf8")
+            if received_question == "VALIDATION ERROR":
+                continue
             if received_question == trick_question["question"]:
                 socket_send(client, json.dumps({"status": "LOST"}))
                 broadcast(f"{name} have been tricked")
@@ -65,6 +67,8 @@ def client_handler(client: socket):
             question_to_answer = next(q for q in all_questions if q["question"] == received_question)
             socket_send(client, json.dumps({"status": "NOT_LOST", "choices": question_to_answer["choices"]}))
             received_choice = client.recv(BUFFER_SIZE).decode("utf8")
+            if received_choice == "VALIDATION ERROR":
+                continue
             if received_choice == question_to_answer["right_answer"]:
                 score[client] = score[client] + 1
             else:

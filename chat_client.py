@@ -1,6 +1,8 @@
 from threading import Condition
 import tkinter as tkt
 import json
+from typing import Any
+
 from GUI import TkinterApplication
 from client_utils import create_socket_thread, read_message
 
@@ -70,52 +72,111 @@ def client_receive():
             else:
                 questions = json.loads(read_message(client_socket)[0])
 
-            window.push_client_message("Questions")
-            # Show the questions
-            show_alternatives(questions)
-            # Retrieve the selected question from the combo box
-            with selection_cond_variable:
-                selection_cond_variable.wait()
-            selected_question = window.peek_message()
-            window.reset_message()
-            # Send the selected question to the server
-            client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
-            response = read_message(client_socket)
-            question_response = json.loads(response[0])
-            # A trick question has been selected
-            if question_response["status"] == "LOST":
-                print("You lost")
-                # Push the broadcast message
-                window.push_client_message(read_message(client_socket)[0])
-                # Close the window
-                window.quit()
-                return
+            question_response = manage_questions(questions)
             # If a not-trick question has been chosen
             # Retrieve the choices
             choices = question_response["choices"]
-
-            window.push_client_message("Choices")
-            # Show the choices
-            show_alternatives(choices)
-            # Make the user type the selected choice
-            with selection_cond_variable:
-                selection_cond_variable.wait()
-            # Retrieve the selected choice
-            selected_choice = window.peek_message()
-            window.reset_message()
-            # Send the selected choice to the server
-            client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
-            response = read_message(client_socket)
-            # Write the new score
-            new_score = int(json.loads(response[0])['score'])
-            window.clear_quiz_listbox()
-            window.set_score(new_score)
+            manage_choices(choices)
         except OSError:
             print("Closed the connection")
             break
 
 
-def show_alternatives(elems):
+def manage_questions(questions: list[str]):
+    """Manage the loading/selection of the question to answer
+
+    Parameters
+    ----------
+    questions : list[str]
+        list of strings containing the questions
+
+    Returns
+    -------
+    Any
+        question response that contains a status and the choices(list of strings)
+    """
+    # Show the questions message
+    window.push_client_message("Questions")
+    # Show the alternatives
+    show_alternatives(questions)
+    with selection_cond_variable:
+        # Wait for the notification that a new message has been typed
+        selection_cond_variable.wait()
+    # Retrieve the selected question
+    selected_question = window.peek_message()
+    # Perform a check in order to have a valid question number
+    if selected_question.isnumeric():
+        numeric_selected_question = int(selected_question)
+        if numeric_selected_question < 0 or numeric_selected_question >= len(questions):
+            client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+            print("Invalid question number")
+            restart_game()
+            return
+    else:
+        client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+        print("Question number must be a number")
+        restart_game()
+        return
+    # Reset the text field
+    window.reset_field()
+    # Send the selected question to the server
+    client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
+    # Wait for a response that contains a status
+    response = read_message(client_socket)
+    # Parse the first argument of the response that is a json that indicates the status
+    question_response = json.loads(response[0])
+    # LOST status means that a TRICK question has been chosen
+    if question_response["status"] == "LOST":
+        print("You got a trick question")
+        # Close the window
+        window.quit()
+        return
+
+    # If the user didn't pick a trick question, return the question response
+    return question_response
+
+
+def manage_choices(choices: list[str]):
+    # Show the choices message
+    window.push_client_message("Choices")
+    # Show the alternatives
+    show_alternatives(choices)
+    with selection_cond_variable:
+        # Wait for the notification that a new message has been typed
+        selection_cond_variable.wait()
+    # Retrieve the selected choice
+    selected_choice = window.peek_message()
+    # Perform a check in order to have a valid choice number
+    if selected_choice.isnumeric():
+        numeric_selected_choice = int(selected_choice)
+        if numeric_selected_choice < 0 or numeric_selected_choice >= len(choices):
+            client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+            print("Invalid choice number")
+            restart_game()
+            return
+    else:
+        client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+        print("Choice number must be a number")
+        restart_game()
+        return
+    # Reset the text field
+    window.reset_message()
+    # Send the selected choice to the server
+    client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
+    # Wait for a response that contains the new score
+    response = read_message(client_socket)
+    new_score = int(json.loads(response[0])['score'])
+    # Write the new score
+    window.set_score(new_score)
+    window.clear_quiz_listbox()
+
+
+def restart_game():
+    window.clear_quiz_listbox()
+    window.reset_field()
+
+
+def show_alternatives(elems: list[Any]):
     """Show all the elements, one by one, in the client listbox"""
     for i in range(len(elems)):
         window.push_client_message(f"{i + 1}. {elems[i]}")
