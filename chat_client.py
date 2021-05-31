@@ -9,7 +9,7 @@ def broadcast_receive():
     broadcast_socket.send(bytes("BROADCAST", "utf8"))
     while True:
         try:
-            msg = broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
+            msg = read_message(broadcast_socket)[0]
             if msg == 'TIMER ENDED':
                 window_frame.disable_entry_field()
             window_frame.push_broadcast_message(msg)
@@ -24,7 +24,7 @@ def leaderboard_receive():
     leaderboard_socket.send(bytes("LEADERBOARD", "utf8"))
     while True:
         try:
-            msg = leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
+            msg = read_message(leaderboard_socket)[0]
             window_frame.delete_leaderboard_content()
             parsed_msg = json.loads(msg)
             for (k, v) in parsed_msg.items():
@@ -46,7 +46,7 @@ def client_receive():
         # Welcome message
         welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window_frame.push_message(welcome_msg)
-        received_message = read_message()
+        received_message = read_message(client_socket)
         role_msg = received_message[0]
         window_frame.set_role_label(json.loads(role_msg)["role"])
         window_frame.push_message(received_message[1])
@@ -67,7 +67,7 @@ def client_receive():
                 questions = json.loads(received_message[2])
                 first_run = False
             else:
-                questions = json.loads(read_message()[0])
+                questions = json.loads(read_message(client_socket)[0])
 
             window_frame.push_message("Questions")
             # Show the questions
@@ -79,13 +79,13 @@ def client_receive():
             window_frame.reset_message()
             # Send the selected question to the server
             client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
-            response = read_message()
+            response = read_message(client_socket)
             question_response = json.loads(response[0])
             # A trick question has been selected
             if question_response["status"] == "LOST":
                 print("You lost")
                 # Push the broadcast message
-                window_frame.push_message(read_message()[0])
+                window_frame.push_message(read_message(client_socket)[0])
                 # Close the window
                 window_frame.close_window()
                 return
@@ -104,7 +104,7 @@ def client_receive():
             window_frame.reset_message()
             # Send the selected choice to the server
             client_socket.send(bytes(choices[int(selected_choice) - 1], "utf8"))
-            response = read_message()
+            response = read_message(client_socket)
             # Write the new score
             window_frame.push_message(f"Current score: {json.loads(response[0])['score']}")
         except OSError:
@@ -135,9 +135,9 @@ def send_to_server(event=None):
             window_frame.reset_message()
 
 
-def read_message():
+def read_message(sock):
     """Read a message from the server, then return a list of messages sent by the server"""
-    message = client_socket.recv(BUFFER_SIZE).decode("utf8")
+    message = sock.recv(BUFFER_SIZE).decode("utf8")
     return list(filter(None, message.split('\r\n\r\n')))
 
 
