@@ -1,9 +1,8 @@
-from socket import AF_INET, socket, SOCK_STREAM
-from threading import Thread, Condition
+from threading import Condition
 import tkinter as tkt
 import json
 from GUI import TkinterApplication
-from client_utils import create_socket_thread
+from client_utils import create_socket_thread, read_message
 
 
 def broadcast_receive():
@@ -138,12 +137,6 @@ def send_to_server(event=None):
         else:
             client_socket.send(bytes(msg, "utf8"))
             window.reset_message()
-
-
-def read_message(sock):
-    """Read a message from the server, then return a list of messages sent by the server"""
-    message = sock.recv(BUFFER_SIZE).decode("utf8")
-    return list(filter(None, message.split('\r\n\r\n')))
 
 
 DEFAULT_PORT = 53000
