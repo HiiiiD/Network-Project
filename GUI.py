@@ -26,6 +26,10 @@ class TkinterApplication(tkt.Tk):
         self.__leaderboard_pane.grid(column=1, row=2, sticky="nsew")
         self.protocol("WM_DELETE_WINDOW", self.__on_closing)
 
+    def close_window(self):
+        self.__on_closing()
+        self.quit()
+
     def __on_closing(self):
         """Function invoked when the window is closed"""
         self.__message_property.set("{quit}")
