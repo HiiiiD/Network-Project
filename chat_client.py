@@ -12,6 +12,7 @@ def broadcast_receive():
             msg = read_message(broadcast_socket)[0]
             if msg == 'TIMER ENDED':
                 window_frame.disable_entry_field()
+                window_frame.disable_send_button()
             window_frame.push_broadcast_message(msg)
         except ConnectionResetError:
             print("Closed the broadcast connection")
@@ -221,6 +222,9 @@ class TkinterFrame:
 
     def disable_entry_field(self):
         self.entry_field.config(state='disabled')
+
+    def disable_send_button(self):
+        self.send_button.config(state='disabled')
 
 
 def grid_configuration(node, colnum, rownum):
