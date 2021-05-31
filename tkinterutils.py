@@ -38,3 +38,12 @@ def build_scrollable_listbox(parent: tkt.Misc):
     scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
     listbox.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
     return listbox
+
+
+class ListBoxPane(tkt.Frame):
+    """Pane that contains a listbox with a vertical scrollbar"""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        # Message list
+        self.listbox = build_scrollable_listbox(self)
