@@ -1,6 +1,7 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Timer
 import json
+from random import shuffle, choice
 
 
 def accept_incoming_connections():
@@ -46,39 +47,11 @@ def client_handler(client: socket):
     score[client] = 0
 
     # Game loop
-    first_question = {
-        "question": "What's your name?",
-        "choices": [
-            "Test1",
-            "Test2",
-            "Test3"
-        ],
-        "right_answer": "Test2"
-    }
-    second_question = {
-        "question": "What's your surname?",
-        "choices": [
-            "Test1",
-            "Test2",
-            "Test3"
-        ],
-        "right_answer": "Test1"
-    }
-    third_question = {
-        "question": "What's your full name?",
-        "choices": [
-            "Test1",
-            "Test2",
-            "Test3"
-        ],
-        "right_answer": "Test3"
-    }
-
-    all_questions = [first_question, second_question, third_question]
-
-    trick_question = third_question
-    questions = list(map(lambda q: q["question"], all_questions))
     while True:
+        shuffle(questions_obj["questions"])
+        all_questions = questions_obj["questions"][:3]
+        questions = list(map(lambda q: q["question"], all_questions))
+        trick_question = choice(all_questions)
         try:
             socket_send(client, json.dumps(questions))
             received_question = client.recv(BUFFER_SIZE).decode("utf8")
@@ -176,6 +149,9 @@ SERVER.bind(ADDRESS)
 # 5 Minutes timer
 timer = Timer(5 * 60.0, broadcast, ['TIMER ENDED'])
 timer.start()
+
+with open("questions.json", "r") as questions_file:
+    questions_obj = json.load(questions_file)
 
 if __name__ == "__main__":
     SERVER.listen(5)
