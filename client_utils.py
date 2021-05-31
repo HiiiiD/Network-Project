@@ -1,16 +1,16 @@
+from typing import Callable, Tuple, List
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
-from typing import Callable
 
 
-def create_socket_thread(address: tuple[str, int], thread_func: Callable):
+def create_socket_thread(address: Tuple[str, int], thread_func: Callable):
     """Create a socket that connects to the specified `address` and starts a thread with the `thread_func`
 
     Parameters
     ----------
     address : tuple[str, int]
         address used for connecting the socket
-    thread_func : Callable
+    thread_func
         function that is working on the thread
     """
     sock = socket(AF_INET, SOCK_STREAM)
@@ -21,7 +21,7 @@ def create_socket_thread(address: tuple[str, int], thread_func: Callable):
     return sock, sock_thread
 
 
-def read_message(sock: socket, buf_size: int = 1024) -> list[str]:
+def read_message(sock: socket, buf_size: int = 1024) -> List[str]:
     """Read a message from the server, then return a list of messages sent by the server
 
     Parameters
