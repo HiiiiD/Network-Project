@@ -173,7 +173,9 @@ ADDRESS = (HOST, PORT)
 SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDRESS)
 
-timer = Timer(5 * 60, broadcast, ['TIMER ENDED'])
+# 5 Minutes timer
+timer = Timer(5 * 60.0, broadcast, ['TIMER ENDED'])
+timer.start()
 
 if __name__ == "__main__":
     SERVER.listen(5)
