@@ -2,6 +2,7 @@ from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Condition
 import tkinter as tkt
 import json
+from tkinterutils import configure_grid, build_scrollable_listbox
 
 
 def broadcast_receive():
@@ -142,14 +143,6 @@ def read_message(sock):
     return list(filter(None, message.split('\r\n\r\n')))
 
 
-def build_scrollable_listbox(parent):
-    scrollbar = tkt.Scrollbar(parent)
-    listbox = tkt.Listbox(parent, yscrollcommand=scrollbar.set)
-    scrollbar.pack(side=tkt.RIGHT, fill=tkt.Y)
-    listbox.pack(side=tkt.LEFT, expand=True, fill=tkt.BOTH)
-    return listbox
-
-
 class TkinterFrame:
     """Class for handling the main frame"""
 
@@ -159,7 +152,7 @@ class TkinterFrame:
         self.window = tkt.Tk()
         self.window.geometry("400x400")
         self.window.title("Chat Project")
-        grid_configuration(self.window, 2, 4)
+        configure_grid(self.window, 2, 4)
         # Role label
         self.role_label = tkt.Label()
         self.role_label.grid(column=0, row=0, sticky="nsew")
@@ -225,14 +218,6 @@ class TkinterFrame:
 
     def disable_send_button(self):
         self.send_button.config(state='disabled')
-
-
-def grid_configuration(node, colnum, rownum):
-    for i in range(colnum):
-        node.grid_columnconfigure(i, weight=1)
-
-    for i in range(rownum):
-        node.grid_rowconfigure(i, weight=1)
 
 
 DEFAULT_PORT = 53000
