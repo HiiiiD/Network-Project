@@ -3,6 +3,7 @@ from threading import Thread, Timer
 import json
 from random import shuffle, choice
 from typing import Dict, Tuple, List
+from traceback import print_exc
 
 
 def accept_incoming_connections():
@@ -81,13 +82,18 @@ def client_handler(client: socket):
             broadcast(f"{name} {'got' if won else 'lost'} a point, its current score is {score[client]}")
             broadcast_leaderboard()
             socket_send(client, json.dumps({"score": score[client]}))
-        except ConnectionResetError:
+        except (ConnectionResetError, ConnectionAbortedError):
             # Here the client already closed its socket
             # so this Error is raised because socket.close() cannot be performed
+            print("Connection reset")
             user_quit(client, name)
             break
-        except Exception as err:
-            print("Generic exception:", err)
+        except StopIteration:
+            print(f"{name} quit the application when answering a question")
+            user_quit(client, name)
+            break
+        except Exception:
+            print_exc()
             user_quit(client, name)
             break
 
