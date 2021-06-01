@@ -114,11 +114,13 @@ def manage_questions(questions: List[str]):
         numeric_selected_question = int(selected_question) - 1
         if numeric_selected_question < 0 or numeric_selected_question >= len(questions):
             client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+            showinfo("You typed an invalid question number")
             print("Invalid question number")
             restart_game()
             return None
     else:
         client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+        showinfo("You typed an invalid question number")
         print("Question number must be a number")
         restart_game()
         return None
