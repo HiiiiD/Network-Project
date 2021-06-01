@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Timer
 import json
@@ -113,11 +113,20 @@ def broadcast(message: str, prefix=""):
         # If the broadcast message says TIMER ENDED then broadcast
         # To the leaderboard socket the winner
         ordered_leaderboard = order_leaderboard()
-        winner_name = next(iter(ordered_leaderboard))
-        winner = {
-            "winner_name": winner_name,
-            "winner_score": ordered_leaderboard[winner_name]
-        }
+        # Group the leaderboard by value
+        leaderboard_by_value = defaultdict(list)
+        for key, val in sorted(ordered_leaderboard.items()):
+            leaderboard_by_value[val].append(key)
+        winner_score = next(iter(leaderboard_by_value))
+        winner_list = leaderboard_by_value[winner_score]
+        if len(winner_list) == 1:
+            winner = {
+                "winner_name": winner_list[0],
+                "winner_score": winner_score
+            }
+        else:
+            winner = list(map(lambda elem: {"winner_name": elem, "winner_score": winner_score}, winner_list))
+
         broadcast_leaderboard({"DECLARED_WINNER": winner})
 
     for user in broadcast_to_delete:
