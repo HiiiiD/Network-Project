@@ -5,6 +5,7 @@ import json
 from typing import Any, List
 from GUI import TkinterApplication
 import client_utils as cu
+from tkinter.messagebox import showinfo
 
 
 def broadcast_receive():
@@ -132,6 +133,7 @@ def manage_questions(questions: List[str]):
     # LOST status means that a TRICK question has been chosen
     if question_response["status"] == "LOST":
         print("You got a trick question")
+        showinfo("Lost due to a trick question", "You got a trick question, you lost")
         window.close_window()
         return question_response
 
@@ -154,11 +156,13 @@ def manage_choices(choices: List[str]):
         numeric_selected_choice = int(selected_choice) - 1
         if numeric_selected_choice < 0 or numeric_selected_choice >= len(choices):
             client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+            showinfo("You typed an invalid choice number")
             print("Invalid choice number")
             restart_game()
             return
     else:
         client_socket.send(bytes("VALIDATION ERROR", "utf8"))
+        showinfo("Choice number must be a number")
         print("Choice number must be a number")
         restart_game()
         return
