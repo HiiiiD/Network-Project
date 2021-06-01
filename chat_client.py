@@ -198,6 +198,7 @@ def send_to_server(event=None):
     if msg == "{quit}":
         client_socket.send(bytes(msg, "utf8"))
         client_socket.close()
+        window.quit()
         return
 
     with selection_cond_variable:
