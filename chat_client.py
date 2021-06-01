@@ -31,6 +31,18 @@ def leaderboard_receive():
             msg = cu.read_message(leaderboard_socket)[0]
             window.clear_leaderboard()
             parsed_msg = json.loads(msg)
+
+            if "DECLARED_WINNER" in parsed_msg:
+                winner = parsed_msg["DECLARED_WINNER"]
+                if isinstance(winner, list):
+                    # We have more than one winner
+                    winner_message = '\n'.join(map(lambda w: f"{w['winner_name']} with the score {w['winner_score']}", winner))
+                    message = f"Winners are \n{winner_message}"
+                else:
+                    message = f"The winner is {winner['winner_name']} with the score {winner['winner_score']}"
+                showinfo("We have a winner", message)
+                del parsed_msg["DECLARED_WINNER"]
+
             for (k, v) in parsed_msg.items():
                 window.push_leaderboard_message(f"{k}:{v}")
         except ConnectionResetError:

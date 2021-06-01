@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Timer
 import json
@@ -108,19 +109,31 @@ def broadcast(message: str, prefix=""):
             broadcast_to_delete.append(user)
             print("A broadcast disconnected")
 
+    if message == "TIMER ENDED":
+        # If the broadcast message says TIMER ENDED then broadcast
+        # To the leaderboard socket the winner
+        ordered_leaderboard = order_leaderboard()
+        winner_name = next(iter(ordered_leaderboard))
+        winner = {
+            "winner_name": winner_name,
+            "winner_score": ordered_leaderboard[winner_name]
+        }
+        broadcast_leaderboard({"DECLARED_WINNER": winner})
+
     for user in broadcast_to_delete:
         broadcast_clients.remove(user)
         del addresses[user]
 
 
-def broadcast_leaderboard():
-    ordered_leaderboard = dict((clients[k], v) for (k, v) in sorted(score.items(),
-                                                                    key=lambda item: item[1],
-                                                                    reverse=True))
+def broadcast_leaderboard(winner_pair=None):
+    if winner_pair is not None:
+        message = json.dumps(winner_pair)
+    else:
+        message = json.dumps(order_leaderboard())
     leaderboard_to_delete: List[socket] = []
     for user in leaderboard_clients:
         try:
-            socket_send(user, json.dumps(ordered_leaderboard))
+            socket_send(user, message)
         except ConnectionResetError:
             leaderboard_to_delete.append(user)
             print("A leaderboard disconnected")
@@ -128,6 +141,14 @@ def broadcast_leaderboard():
     for user in leaderboard_to_delete:
         leaderboard_clients.remove(user)
         del addresses[user]
+
+
+def order_leaderboard():
+    """Order the leaderboard"""
+    ordered_leaderboard = OrderedDict((clients[k], v) for (k, v) in sorted(score.items(),
+                                                                           key=lambda item: item[1],
+                                                                           reverse=True))
+    return ordered_leaderboard
 
 
 def socket_send(sock: socket, message):
@@ -163,7 +184,7 @@ SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDRESS)
 
 # 5 Minutes timer
-timer = Timer(5 * 60.0, broadcast, ['TIMER ENDED'])
+timer = Timer(2 * 60.0, broadcast, ['TIMER ENDED'])
 timer.start()
 
 with open("questions.json", "r") as questions_file:
