@@ -2,6 +2,7 @@ from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Timer
 import json
 from random import shuffle, choice
+from typing import Dict, Tuple, List
 
 
 def accept_incoming_connections():
@@ -86,7 +87,7 @@ def client_handler(client: socket):
             user_quit(client, name)
             break
         except Exception as err:
-            print(f"Generic exception caused by {err}")
+            print("Generic exception:", err)
             user_quit(client, name)
             break
 
@@ -103,13 +104,14 @@ def broadcast(message: str, prefix=""):
 
     for user in broadcast_to_delete:
         broadcast_clients.remove(user)
+        del addresses[user]
 
 
 def broadcast_leaderboard():
     ordered_leaderboard = dict((clients[k], v) for (k, v) in sorted(score.items(),
                                                                     key=lambda item: item[1],
                                                                     reverse=True))
-    leaderboard_to_delete = []
+    leaderboard_to_delete: List[socket] = []
     for user in leaderboard_clients:
         try:
             socket_send(user, json.dumps(ordered_leaderboard))
@@ -119,6 +121,7 @@ def broadcast_leaderboard():
 
     for user in leaderboard_to_delete:
         leaderboard_clients.remove(user)
+        del addresses[user]
 
 
 def socket_send(sock: socket, message):
@@ -136,14 +139,14 @@ def user_quit(client, name):
     delete_client(client)
     broadcast(f"{name} quit.")
     print(f'{name} disconnected from the chat')
+    broadcast_leaderboard()
 
 
-clients = {}
-addresses = {}
-score = {}
-broadcast_clients = []
-leaderboard_clients = []
-timer_clients = []
+clients: Dict[socket, str] = {}
+addresses: Dict[socket, Tuple[str, int]] = {}
+score: Dict[socket, int] = {}
+broadcast_clients: List[socket] = []
+leaderboard_clients: List[socket] = []
 
 HOST = 'localhost'
 PORT = 53000
