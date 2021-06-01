@@ -1,3 +1,4 @@
+import argparse
 from socket import socket, AF_INET, SOCK_STREAM
 from threading import Condition, Thread
 import tkinter as tkt
@@ -36,7 +37,8 @@ def leaderboard_receive():
                 winner = parsed_msg["DECLARED_WINNER"]
                 if isinstance(winner, list):
                     # We have more than one winner
-                    winner_message = '\n'.join(map(lambda w: f"{w['winner_name']} with the score {w['winner_score']}", winner))
+                    winner_message = '\n'.join(
+                        map(lambda w: f"{w['winner_name']} with the score {w['winner_score']}", winner))
                     message = f"Winners are \n{winner_message}"
                 else:
                     message = f"The winner is {winner['winner_name']} with the score {winner['winner_score']}"
@@ -224,16 +226,10 @@ def send_to_server(event=None):
 DEFAULT_PORT = 53000
 DEFAULT_HOST = 'localhost'
 
-# ----Connection to the Server----
-HOST = input('Write the Host server: ')
-PORT = input(f'Write the Host server port(default is {DEFAULT_PORT}): ')
-if not PORT:
-    PORT = DEFAULT_PORT
-else:
-    PORT = int(PORT)
-
-if not HOST:
-    HOST = DEFAULT_HOST
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('-host', '--host', type=str, default=DEFAULT_HOST, help='Server host name')
+parser.add_argument('-port', '--port', type=int, default=DEFAULT_PORT, help='Port of the server')
+args = parser.parse_args()
 
 # Sync objects
 selection_cond_variable = Condition()
@@ -243,7 +239,7 @@ game_loop = False
 window = TkinterApplication(send_to_server)
 
 BUFFER_SIZE = 1024
-ADDRESS = (HOST, PORT)
+ADDRESS = (args.host, args.port)
 
 client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect(ADDRESS)
