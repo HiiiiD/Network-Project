@@ -69,12 +69,15 @@ def client_handler(client: socket):
             received_choice = client.recv(BUFFER_SIZE).decode("utf8")
             if received_choice == "VALIDATION ERROR":
                 continue
+
+            won = False
             if received_choice == question_to_answer["right_answer"]:
+                won = True
                 score[client] = score[client] + 1
             else:
                 score[client] = score[client] - 1
 
-            broadcast(f"{name} got a point, its current score is {score[client]}")
+            broadcast(f"{name} {'got' if won else 'lost'} a point, its current score is {score[client]}")
             broadcast_leaderboard()
             socket_send(client, json.dumps({"score": score[client]}))
         except ConnectionResetError:
