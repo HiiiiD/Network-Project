@@ -241,22 +241,11 @@ window = TkinterApplication(send_to_server)
 BUFFER_SIZE = 1024
 ADDRESS = (args.host, args.port)
 
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDRESS)
-client_socket_thread = Thread(target=client_receive)
-client_socket_thread.setDaemon(True)
+client_socket, client_socket_thread = cu.create_socket_thread(ADDRESS, client_receive)
 client_socket_thread.start()
-
-broadcast_socket = socket(AF_INET, SOCK_STREAM)
-broadcast_socket.connect(ADDRESS)
-broadcast_socket_thread = Thread(target=broadcast_receive)
-broadcast_socket_thread.setDaemon(True)
+broadcast_socket, broadcast_socket_thread = cu.create_socket_thread(ADDRESS, broadcast_receive)
 broadcast_socket_thread.start()
-
-leaderboard_socket = socket(AF_INET, SOCK_STREAM)
-leaderboard_socket.connect(ADDRESS)
-leaderboard_socket_thread = Thread(target=leaderboard_receive)
-leaderboard_socket_thread.setDaemon(True)
+leaderboard_socket, leaderboard_socket_thread = cu.create_socket_thread(ADDRESS, leaderboard_receive)
 leaderboard_socket_thread.start()
 
 # Start the app
