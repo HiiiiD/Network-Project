@@ -109,6 +109,10 @@ def broadcast(message: str, prefix=""):
             broadcast_to_delete.append(user)
             print("A broadcast disconnected")
 
+    for user in broadcast_to_delete:
+        broadcast_clients.remove(user)
+        del addresses[user]
+
     if message == "TIMER ENDED":
         # If the broadcast message says TIMER ENDED then broadcast
         # To the leaderboard socket the winner
@@ -117,6 +121,8 @@ def broadcast(message: str, prefix=""):
         leaderboard_by_value = defaultdict(list)
         for key, val in sorted(ordered_leaderboard.items()):
             leaderboard_by_value[val].append(key)
+        if len(leaderboard_by_value.keys()) == 0:
+            return
         winner_score = next(iter(leaderboard_by_value))
         winner_list = leaderboard_by_value[winner_score]
         if len(winner_list) == 1:
@@ -129,9 +135,7 @@ def broadcast(message: str, prefix=""):
 
         broadcast_leaderboard({"DECLARED_WINNER": winner})
 
-    for user in broadcast_to_delete:
-        broadcast_clients.remove(user)
-        del addresses[user]
+
 
 
 def broadcast_leaderboard(winner_pair=None):
