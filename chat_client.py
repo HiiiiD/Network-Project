@@ -102,11 +102,14 @@ def client_receive():
             else:
                 questions = json.loads(cu.read_message(client_socket)[0])
 
-            question_response = manage_questions(questions)
+            question_response, selected_question = manage_questions(questions)
             if question_response is None:
                 continue
             if question_response["status"] == "LOST":
                 break
+
+            window.clear_quiz_listbox()
+            window.push_client_message(f"Question: \n{selected_question}")
             # If a not-trick question has been chosen
             # Retrieve the choices
             choices = question_response["choices"]
@@ -146,17 +149,19 @@ def manage_questions(questions: List[str]):
             showerror("Invalid question number", "You typed an invalid question number")
             print("Invalid question number")
             restart_game()
-            return None
+            return None, None
     else:
         client_socket.send(bytes("VALIDATION ERROR", "utf8"))
         showerror("Invalid answer", "The answer must be a number")
         print("Question number must be a number")
         restart_game()
-        return None
+        return None, None
     # Reset the text field
     window.reset_field()
+    # Get the selected question
+    selected_question_name = questions[int(selected_question) - 1]
     # Send the selected question to the server
-    client_socket.send(bytes(questions[int(selected_question) - 1], "utf8"))
+    client_socket.send(bytes(selected_question_name, "utf8"))
     # Wait for a response that contains a status
     response = cu.read_message(client_socket)
     # Parse the first argument of the response that is a json that indicates the status
@@ -166,10 +171,10 @@ def manage_questions(questions: List[str]):
         print("You got a trick question")
         showerror("Lost due to a trick question", "You got a trick question, you lost")
         window.close_window()
-        return question_response
+        return question_response, selected_question_name
 
     # If the user didn't pick a trick question, return the question response
-    return question_response
+    return question_response, selected_question_name
 
 
 def manage_choices(choices: List[str]):
