@@ -219,8 +219,11 @@ def send_to_server(event=None):
         if game_loop:
             selection_cond_variable.notify(1)
         else:
-            client_socket.send(bytes(msg, "utf8"))
-            window.reset_field()
+            if msg != 'BROADCAST' and msg != 'LEADERBOARD':
+                client_socket.send(bytes(msg, "utf8"))
+                window.reset_field()
+            else:
+                showerror("Invalid name", "You typed an invalid name. Invalid names are 'BROADCAST' and 'LEADERBOARD'")
 
 
 DEFAULT_PORT = 53000
