@@ -48,6 +48,7 @@ def client_handler(client: socket):
     # Updates the client dictionary
     clients[client] = name
     score[client] = 0
+    broadcast_leaderboard()
 
     # Game loop
     while True:
