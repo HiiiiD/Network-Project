@@ -162,14 +162,9 @@ class _QuizPane(_CommonAppPane):
 
     def __init__(self, parent, button_send_action, message_property):
         super().__init__(parent, "Quiz")
-        # configure_grid(self, 1, 4)
-        # self._label.grid(column=0, row=0, sticky="nsew")
-        # self._listbox_pane.grid(column=0, row=1, sticky="nsew")
         self.__entry_field = tkt.Entry(self, textvariable=message_property)
         self.__entry_field.bind("<Return>", button_send_action)
-        # self.__entry_field.grid(column=0, row=2, sticky="nsew")
         self.__send_button = tkt.Button(self, text="Send", command=button_send_action)
-        # self.__send_button.grid(column=0, row=3, sticky="nsew")
         self.__send_button.pack(side=tkt.BOTTOM, fill=tkt.BOTH)
         self.__entry_field.pack(side=tkt.BOTTOM, fill=tkt.BOTH)
         self._listbox_pane.pack(side=tkt.BOTTOM, expand=True, fill=tkt.BOTH)
