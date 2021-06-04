@@ -122,7 +122,6 @@ class _TopPane(tkt.Frame):
         self.__role_label.grid(column=0, row=0, sticky="nsew")
         self.__score_label = tkt.Label(self)
         self.__score_label.grid(column=1, row=0, sticky="nsew")
-        self.set_score(0)
 
     def set_score(self, new_score: int):
         """Set the updated score"""

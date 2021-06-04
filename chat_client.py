@@ -67,6 +67,7 @@ def client_receive():
         received_message = cu.read_message(client_socket)
         role_msg = received_message[0]
         window.set_role(json.loads(role_msg)["role"])
+        window.set_score(0)
         window.push_client_message(received_message[1])
     except OSError:
         print("Closed the connection")
