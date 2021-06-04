@@ -6,10 +6,12 @@ import json
 from typing import Any, List
 from GUI import TkinterApplication
 import client_utils as cu
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showinfo, showerror
 
 
 def broadcast_receive():
+    """Handler for the broadcast thread"""
+    # Get the welcome message
     broadcast_socket.recv(BUFFER_SIZE).decode("utf8")
     broadcast_socket.send(bytes("BROADCAST", "utf8"))
     while True:
@@ -24,17 +26,21 @@ def broadcast_receive():
 
 
 def leaderboard_receive():
+    """Handler for the leaderboard thread"""
     # Get the welcome message
     leaderboard_socket.recv(BUFFER_SIZE).decode("utf8")
     leaderboard_socket.send(bytes("LEADERBOARD", "utf8"))
     while True:
         try:
+            # Show the leaderboard
             msg = cu.read_message(leaderboard_socket)[0]
             window.clear_leaderboard()
             parsed_msg = json.loads(msg)
 
+            # Check if the leaderboard message is the winner message
             if "DECLARED_WINNER" in parsed_msg:
                 winner = parsed_msg["DECLARED_WINNER"]
+                # If the winner is a list then we have more than one winner
                 if isinstance(winner, list):
                     # We have more than one winner
                     winner_message = '\n'.join(
@@ -42,11 +48,10 @@ def leaderboard_receive():
                     message = f"Winners are \n{winner_message}"
                 else:
                     message = f"The winner is {winner['winner_name']} with the score {winner['winner_score']}"
-                showerror("We have a winner", message)
-                del parsed_msg["DECLARED_WINNER"]
-
-            for (k, v) in parsed_msg.items():
-                window.push_leaderboard_message(f"{k}:{v}")
+                showinfo("We have a winner", message)
+            else:
+                for (k, v) in parsed_msg.items():
+                    window.push_leaderboard_message(f"{k}:{v}")
         except ConnectionResetError:
             print("Closed the leaderboard connection")
             return
