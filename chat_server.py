@@ -2,7 +2,7 @@ from collections import OrderedDict, defaultdict
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread, Timer
 import json
-from random import shuffle, choice
+from random import sample, choice
 from typing import Dict, Tuple, List
 from traceback import print_exc
 
@@ -52,8 +52,8 @@ def client_handler(client: socket):
 
     # Game loop
     while True:
-        shuffle(questions_obj["questions"])
-        all_questions = questions_obj["questions"][:3]
+        shuffled_questions = sample(questions_obj["questions"], len(questions_obj["questions"]))
+        all_questions = shuffled_questions[:3]
         questions = list(map(lambda q: q["question"], all_questions))
         trick_question = choice(all_questions)
         try:
@@ -124,7 +124,6 @@ def broadcast(message: str, prefix=""):
             leaderboard_by_value[val].append(key)
         if len(leaderboard_by_value.keys()) == 0:
             return
-        print(leaderboard_by_value)
         leaderboard_by_value = OrderedDict((k, v) for k, v in sorted(leaderboard_by_value.items(),
                                                                      key=lambda item: item[0],
                                                                      reverse=True))
@@ -142,10 +141,15 @@ def broadcast(message: str, prefix=""):
 
 
 def broadcast_leaderboard(winner_pair=None):
+    """Broadcast the leaderboard"""
+    # Broadcasting the winner
     if winner_pair is not None:
         message = json.dumps(winner_pair)
     else:
+        # Broadcasting the entire leaderboard
         message = json.dumps(order_leaderboard())
+
+    # Leaderboard sockets to delete
     leaderboard_to_delete: List[socket] = []
     for user in leaderboard_clients:
         try:
@@ -154,13 +158,14 @@ def broadcast_leaderboard(winner_pair=None):
             leaderboard_to_delete.append(user)
             print("A leaderboard disconnected")
 
+    # Delete leaderboard sockets from the clients and from the addresses
     for user in leaderboard_to_delete:
         leaderboard_clients.remove(user)
         del addresses[user]
 
 
 def order_leaderboard():
-    """Order the leaderboard"""
+    """Order the leaderboard by value descending"""
     ordered_leaderboard = OrderedDict((clients[k], v) for (k, v) in sorted(score.items(),
                                                                            key=lambda item: item[1],
                                                                            reverse=True))
@@ -173,12 +178,14 @@ def socket_send(sock: socket, message):
 
 
 def delete_client(client):
+    """Delete a client from all the dictionaries"""
     del clients[client]
     del addresses[client]
     del score[client]
 
 
 def user_quit(client, name):
+    """Function invoked whenever a user quit from the game"""
     delete_client(client)
     broadcast(f"{name} quit.")
     print(f'{name} disconnected from the chat')
