@@ -37,9 +37,9 @@ def client_handler(client: socket):
     # Welcomes the new user
     welcome_message = f"Welcome {name}! If you want to quit, write {{quit}}."
     socket_send(client, welcome_message)
-    role = {
-        "role": "Master"
-    }
+    # Get a random role
+    role = {"role": choice(roles)}
+    # Send the role
     socket_send(client, json.dumps(role))
     socket_send(client, f"Your role is: {role['role']}")
     msg = f"{name} joined the chat with the role {role['role']}!"
@@ -52,15 +52,21 @@ def client_handler(client: socket):
 
     # Game loop
     while True:
+        # Shuffle the questions
         shuffled_questions = sample(questions_obj["questions"], len(questions_obj["questions"]))
+        # Get 3 of these shuffled questions
         all_questions = shuffled_questions[:3]
+        # Map each question object to only the question name
         questions = list(map(lambda q: q["question"], all_questions))
+        # Get the trick question
         trick_question = choice(all_questions)
         try:
             socket_send(client, json.dumps(questions))
             received_question = client.recv(BUFFER_SIZE).decode("utf8")
+            # Check if there was a validation error
             if received_question == "VALIDATION ERROR":
                 continue
+            # Check if the client got the trick question
             if received_question == trick_question["question"]:
                 socket_send(client, json.dumps({"status": "LOST"}))
                 broadcast(f"{name} have been tricked")
@@ -71,10 +77,12 @@ def client_handler(client: socket):
             question_to_answer = next(q for q in all_questions if q["question"] == received_question)
             socket_send(client, json.dumps({"status": "NOT_LOST", "choices": question_to_answer["choices"]}))
             received_choice = client.recv(BUFFER_SIZE).decode("utf8")
+            # Check for UI validation error
             if received_choice == "VALIDATION ERROR":
                 continue
 
             won = False
+            # Check if the right answer has been chosen
             if received_choice == question_to_answer["right_answer"]:
                 won = True
                 score[client] = score[client] + 1
@@ -205,6 +213,24 @@ ADDRESS = (HOST, PORT)
 
 SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDRESS)
+
+roles = [
+    'Apprentice',
+    'High',
+    'Sage',
+    'Demonlord',
+    'High',
+    'Magister',
+    'Foreman',
+    'Ranger',
+    'Commander',
+    'Spokesman',
+    'Royal',
+    'Saint',
+    'Royal',
+    'Mentor',
+    'Warmaster'
+]
 
 # 5 Minutes timer
 timer = Timer(2 * 60.0, broadcast, ['TIMER ENDED'])

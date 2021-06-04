@@ -70,8 +70,10 @@ def client_receive():
         welcome_msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
         window.push_client_message(welcome_msg)
         received_message = cu.read_message(client_socket)
+        # Get the part of the message describing the role
         role_msg = received_message[0]
         window.set_role(json.loads(role_msg)["role"])
+        # Set the score to 0
         window.set_score(0)
         if len(received_message) == 3:
             window.push_client_message(received_message[1])
@@ -93,6 +95,7 @@ def client_receive():
     # Game loop
     while True:
         try:
+            # Checks for the received message
             if len(received_message) == 3 and first_run:
                 questions = json.loads(received_message[2])
                 first_run = False
@@ -215,6 +218,7 @@ def manage_choices(choices: List[str]):
 
 
 def restart_game():
+    """Restart the game"""
     window.clear_quiz_listbox()
     window.reset_field()
 
@@ -226,8 +230,8 @@ def show_alternatives(elems: List[Any]):
 
 
 def send_to_server(event=None):
-    global game_loop
     """Function for sending messages to the server"""
+    global game_loop
     msg = window.peek_message()
     if msg == "{quit}":
         client_socket.send(bytes(msg, "utf8"))
@@ -237,8 +241,10 @@ def send_to_server(event=None):
 
     with selection_cond_variable:
         if game_loop:
+            # Notify the Condition Variable
             selection_cond_variable.notify(1)
         else:
+            # Invalid values for a message
             if msg != 'BROADCAST' and msg != 'LEADERBOARD':
                 client_socket.send(bytes(msg, "utf8"))
                 window.reset_field()
