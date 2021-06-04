@@ -73,7 +73,14 @@ def client_receive():
         role_msg = received_message[0]
         window.set_role(json.loads(role_msg)["role"])
         window.set_score(0)
-        window.push_client_message(received_message[1])
+        if len(received_message) == 3:
+            window.push_client_message(received_message[1])
+        elif len(received_message) == 2:
+            received_message = received_message[1:]
+            window.push_client_message(received_message[0])
+        else:
+            received_message = cu.read_message(client_socket)
+            window.push_client_message(received_message[0])
     except OSError:
         print("Closed the connection")
         return
@@ -86,9 +93,11 @@ def client_receive():
     # Game loop
     while True:
         try:
-            # Retrieve the questions
             if len(received_message) == 3 and first_run:
                 questions = json.loads(received_message[2])
+                first_run = False
+            elif len(received_message) == 2 and first_run:
+                questions = json.loads(received_message[1])
                 first_run = False
             else:
                 questions = json.loads(cu.read_message(client_socket)[0])

@@ -25,6 +25,7 @@ class TkinterApplication(tkt.Tk):
         self.__leaderboard_pane = _LeaderboardPane(self)
         self.__leaderboard_pane.grid(column=1, row=2, sticky="nsew")
         self.protocol("WM_DELETE_WINDOW", self.__on_closing)
+        self.minsize(1100, 550)
 
     def close_window(self):
         self.__on_closing()
