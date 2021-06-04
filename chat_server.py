@@ -124,6 +124,10 @@ def broadcast(message: str, prefix=""):
             leaderboard_by_value[val].append(key)
         if len(leaderboard_by_value.keys()) == 0:
             return
+        print(leaderboard_by_value)
+        leaderboard_by_value = OrderedDict((k, v) for k, v in sorted(leaderboard_by_value.items(),
+                                                                     key=lambda item: item[0],
+                                                                     reverse=True))
         winner_score = next(iter(leaderboard_by_value))
         winner_list = leaderboard_by_value[winner_score]
         if len(winner_list) == 1:
@@ -135,8 +139,6 @@ def broadcast(message: str, prefix=""):
             winner = list(map(lambda elem: {"winner_name": elem, "winner_score": winner_score}, winner_list))
 
         broadcast_leaderboard({"DECLARED_WINNER": winner})
-
-
 
 
 def broadcast_leaderboard(winner_pair=None):
